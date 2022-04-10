@@ -1,0 +1,7 @@
+out/*
+!out/.index
+
+.env
+serviceAccountKey.json
+/tmp
+gifconverter
