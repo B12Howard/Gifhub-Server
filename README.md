@@ -1,3 +1,4 @@
+![gifhub-proposed-architecture](https://user-images.githubusercontent.com/39282569/164768281-595b3a7e-3ff0-4fd0-954f-7c4b0fe8fb7b.png)
 # gifcreator
 
 ## Propsed Architecture
