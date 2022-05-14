@@ -1,6 +1,4 @@
 # gifcreator
 
-## Propsed Architecture
-https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1#G1TPXwIWxqywPS4bMM8Rdx2SlpwpfUVKe0
-
-![Gifhub drawio](https://user-images.githubusercontent.com/39282569/164787842-bf7354c1-eaf0-498b-90d1-e4a8dd9a4b6d.png)
+## Propsed Solutions for video encoding
+Converting mp4 to gif is a long process that can go over the http time limit. A couple solutions would be 1) the complicated solution involving a message queue. The pro is scalability, con is complexity for an app that probably will not explode in popularity. And 2) Send the user a response, and use Goroutine(s) to continue processing the file(s). Then use websockets to alert the user that their process is done. This has less scalability, I think. But eliminates the complexity of having to add a message queue.
