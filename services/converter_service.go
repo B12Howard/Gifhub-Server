@@ -3,11 +3,10 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	delete_file "gifconverter/content/utility/delete_file"
-	vidprocessing "gifconverter/content/vid-processing"
+	vidprocessing "gifconverter/services/vid-processing"
 	"net/http"
 	"strconv"
-	"sync"
+	"time"
 
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -15,8 +14,14 @@ import (
 
 type ExtractByUrlData struct {
 	Video string
-	Start int // milliseconds
+	Start string
 	Dur   int // seconds
+}
+
+type ExtractByUrlDataStartEnd struct {
+	Video string
+	Start string
+	End   string
 }
 
 func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
@@ -25,10 +30,10 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 		start := r.URL.Query().Get("start")
 		dur := r.URL.Query().Get("dur")
 
-		startI, err := strconv.Atoi(start)
-		if err != nil {
-			panic(err)
-		}
+		// startI, err := strconv.Atoi(start)
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 		durI, err := strconv.Atoi(dur)
 		if err != nil {
@@ -40,7 +45,7 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 		fileName := id.String()
 		fullPath := vidprocessing.OutDir + fileName + ".gif"
 
-		file, err := vidprocessing.ConvertToGifByUrl(ytURL, startI, durI, fullPath)
+		file, err := vidprocessing.ConvertToGifByUrl(ytURL, start, durI, fullPath)
 		if err != nil {
 			panic(err)
 		}
@@ -54,9 +59,45 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Synchronous version
+// func ServeExtractByUrl() func(w http.ResponseWriter, r *http.Request) {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		var data ExtractByUrlData
+
+// 		decoder := json.NewDecoder(r.Body)
+// 		err := decoder.Decode(&data)
+
+// 		if err != nil {
+// 			panic(err)
+// 		}
+
+// 		fmt.Printf("Received args: %v %v %v\n", data.Video, data.Start, data.Dur)
+
+// 		id := uuid.New()
+// 		fileName := id.String()
+// 		fullPath := vidprocessing.OutDir + fileName + ".gif"
+
+// 		file, err := vidprocessing.ConvertToGifByUrl(data.Video, data.Start, data.Dur, fullPath)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+
+// 		rmvError := delete_file.RemoveFileFromDirectory(fullPath)
+// 		if rmvError != nil {
+// 			panic(rmvError)
+// 		}
+
+// 		render.Status(r, http.StatusFound)
+// 		render.JSON(w, r, file)
+
+// 	}
+// }
+
+// Asynchronous version
 func ServeExtractByUrl() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var data ExtractByUrlData
+		fmt.Print("start", time.Now())
+		var data ExtractByUrlDataStartEnd
 
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&data)
@@ -65,29 +106,27 @@ func ServeExtractByUrl() func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		fmt.Printf("Received args: %v %v %v\n", data.Video, data.Start, data.Dur)
+		fmt.Printf("Received args: %v %v %v\n", data.Video, data.Start, data.End)
 
-		id := uuid.New()
-		fileName := id.String()
-		fullPath := vidprocessing.OutDir + fileName + ".gif"
-
-		file, err := vidprocessing.ConvertToGifByUrl(data.Video, data.Start, data.Dur, fullPath)
+		// id := uuid.New()
+		// fileName := id.String()
+		// fullPath := vidprocessing.OutDir + fileName + ".gif"
+		go convertToGifConcurrentStartEnd(data)
+		// file, err := vidprocessing.ConvertToGifByUrlByStartEnd(data.Video, data.Start, data.End, fullPath)
 		if err != nil {
 			panic(err)
 		}
 
-		rmvError := delete_file.RemoveFileFromDirectory(fullPath)
-		if rmvError != nil {
-			panic(rmvError)
-		}
+		// rmvError := delete_file.RemoveFileFromDirectory(fullPath)
+		// if rmvError != nil {
+		// 	panic(rmvError)
+		// }
 
 		render.Status(r, http.StatusFound)
-		render.JSON(w, r, file)
+		render.JSON(w, r, "procressing file")
 
 	}
 }
-
-var extractWg sync.WaitGroup
 
 // Only use when processing more than 1 file at a time
 // Chunking a video took longer than processing the whole thing at once
@@ -162,7 +201,23 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func convertToGifConcurrent(i int, c chan []byte, data ExtractByUrlData, choppedStart int, choppedEnd int) {
+func convertToGifConcurrentStartEnd(data ExtractByUrlDataStartEnd) {
+
+	id := uuid.New()
+	fileName := id.String()
+	fullPath := vidprocessing.OutDir + fileName + ".gif"
+
+	_, err := vidprocessing.ConvertToGifByUrlByStartEnd(data.Video, data.Start, data.End, fullPath)
+
+	fmt.Print("end", time.Now())
+	if err != nil {
+		panic(err)
+	}
+
+	return
+}
+
+func convertToGifConcurrent(i int, c chan []byte, data ExtractByUrlData, choppedStart string, choppedEnd int) {
 	defer wg.Done()
 
 	id := uuid.New()
