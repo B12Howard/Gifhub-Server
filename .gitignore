@@ -3,5 +3,6 @@ out/*
 
 .env
 serviceAccountKey.json
+gcpStorageAccountKey.json
 /tmp
 gifconverter
