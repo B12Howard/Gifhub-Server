@@ -10,8 +10,6 @@ import (
 	"gifconverter/config"
 
 	"github.com/go-chi/chi/v5"
-	// "gifconverter/router"
-	// "github.com/gorilla/websocket"
 )
 
 type MyHandler struct {
