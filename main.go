@@ -8,7 +8,8 @@ import (
 	"os"
 
 	"gifconverter/config"
-	"gifconverter/router"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type MyHandler struct {
@@ -29,8 +30,8 @@ func main() {
 
 	db := config.NewDb()
 
-	router := router.NewRoutes(db)
-
+	router := chi.NewRouter()
+	NewRoutes(router, db)
 	fmt.Println("Ready!")
 
 	http.ListenAndServe(":5020", router)

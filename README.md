@@ -1,5 +1,8 @@
 # gifcreator
 
+### Run
+Use the command go run github.com/cosmtrek/air to run with hot reload
+
 ## Architecture
 ![Gifhub_simplified_architecture drawio](https://user-images.githubusercontent.com/39282569/168500512-22550801-b681-4c4d-93e5-b58a395327bf.png)
 
