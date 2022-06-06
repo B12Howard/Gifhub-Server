@@ -2,11 +2,14 @@ package services
 
 import (
 	"encoding/json"
-	"fmt"
 	vidprocessing "gifconverter/services/vid-processing"
+	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
+
+	"database/sql"
 
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -19,9 +22,10 @@ type ExtractByUrlData struct {
 }
 
 type ExtractByUrlDataStartEnd struct {
-	Video string
-	Start string
-	End   string
+	Video    string
+	Start    string
+	End      string
+	WsUserID string
 }
 
 func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +44,6 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		fmt.Printf("Received args: %v %v %v\n", ytURL, start, dur)
 		id := uuid.New()
 		fileName := id.String()
 		fullPath := vidprocessing.OutDir + fileName + ".gif"
@@ -94,9 +97,8 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 // }
 
 // Asynchronous version
-func ServeExtractByUrl() func(w http.ResponseWriter, r *http.Request) {
+func ServeExtractByUrl(hub *Hub, db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Print("start", time.Now())
 		var data ExtractByUrlDataStartEnd
 
 		decoder := json.NewDecoder(r.Body)
@@ -106,21 +108,11 @@ func ServeExtractByUrl() func(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		fmt.Printf("Received args: %v %v %v\n", data.Video, data.Start, data.End)
+		go convertToGifConcurrentStartEnd(data, hub, data.WsUserID, db)
 
-		// id := uuid.New()
-		// fileName := id.String()
-		// fullPath := vidprocessing.OutDir + fileName + ".gif"
-		go convertToGifConcurrentStartEnd(data)
-		// file, err := vidprocessing.ConvertToGifByUrlByStartEnd(data.Video, data.Start, data.End, fullPath)
 		if err != nil {
 			panic(err)
 		}
-
-		// rmvError := delete_file.RemoveFileFromDirectory(fullPath)
-		// if rmvError != nil {
-		// 	panic(rmvError)
-		// }
 
 		render.Status(r, http.StatusFound)
 		render.JSON(w, r, "procressing file")
@@ -169,7 +161,6 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 		wg.Wait()
 
 		for i := 0; i < elementCount; i++ {
-			fmt.Println(i)
 			s = append(s, <-c)
 		}
 
@@ -192,8 +183,6 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 		// defer f.Close()
 		// gif.EncodeAll(f, outGif)
 
-		fmt.Printf("Received args: %v %v %v\n", data.Video, data.Start, data.Dur)
-
 		render.Status(r, http.StatusFound)
 		render.JSON(w, r, s)
 
@@ -201,18 +190,37 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func convertToGifConcurrentStartEnd(data ExtractByUrlDataStartEnd) {
+func convertToGifConcurrentStartEnd(data ExtractByUrlDataStartEnd, hub *Hub, userID string, db *sql.DB) {
 
 	id := uuid.New()
 	fileName := id.String()
 	fullPath := vidprocessing.OutDir + fileName + ".gif"
-
+	start := time.Now()
 	_, err := vidprocessing.ConvertToGifByUrlByStartEnd(data.Video, data.Start, data.End, fullPath)
 
-	fmt.Print("end", time.Now())
 	if err != nil {
 		panic(err)
 	}
+	f, _ := os.Open(fullPath)
+	defer f.Close()
+
+	_, err = db.Exec("INSERT INTO usage (uid, duration, createdat) VALUES ($1, $2, $3)", userID, math.Round(time.Now().Sub(start).Seconds()), time.Now().UTC())
+
+	if err != nil {
+		panic(err)
+	}
+
+	FileUpload("created-gifs", f, fileName)
+
+	var socketEventResponse SocketEventStruct
+	socketEventResponse.EventName = "message response"
+	socketEventResponse.EventPayload = map[string]interface{}{
+		"username": "usernamestuff",
+		"message":  "file is complete",
+		"userID":   userID,
+	}
+
+	EmitToSpecificClient(hub, socketEventResponse, userID)
 
 	return
 }
