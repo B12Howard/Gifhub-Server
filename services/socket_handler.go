@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/google/uuid"
+	// "github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -35,23 +35,9 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 	switch socketEventPayload.EventName {
 	case "join":
 		log.Printf("Join Event triggered")
-		BroadcastSocketEventToAllClient(client.hub, SocketEventStruct{
-			EventName: socketEventPayload.EventName,
-			EventPayload: JoinDisconnectPayload{
-				UserID: client.userID,
-				Users:  getAllConnectedUsers(client.hub),
-			},
-		})
 
 	case "disconnect":
 		log.Printf("Disconnect Event triggered")
-		BroadcastSocketEventToAllClient(client.hub, SocketEventStruct{
-			EventName: socketEventPayload.EventName,
-			EventPayload: JoinDisconnectPayload{
-				UserID: client.userID,
-				Users:  getAllConnectedUsers(client.hub),
-			},
-		})
 
 	case "message":
 		log.Printf("Message Event triggered")
@@ -162,13 +148,13 @@ func (c *Client) writePump() {
 
 // CreateNewSocketUser creates a new socket user
 func CreateNewSocketUser(hub *Hub, connection *websocket.Conn, username string) {
-	uniqueID := uuid.New()
+	// uniqueID := uuid.New()
 	client := &Client{
 		hub:                 hub,
 		webSocketConnection: connection,
 		send:                make(chan SocketEventStruct),
 		username:            username,
-		userID:              uniqueID.String(),
+		userID:              username,
 	}
 
 	go client.writePump()
@@ -203,8 +189,10 @@ func HandleUserDisconnectEvent(hub *Hub, client *Client) {
 // EmitToSpecificClient will emit the socket event to specific socket user
 // TODO can this be made into a hash lookup?
 func EmitToSpecificClient(hub *Hub, payload SocketEventStruct, userID string) {
+	fmt.Println("payload", payload)
 	for client := range hub.clients {
 		if client.userID == userID {
+			fmt.Println("found user", userID)
 			select {
 			case client.send <- payload:
 			default:
