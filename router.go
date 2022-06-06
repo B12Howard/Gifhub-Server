@@ -30,7 +30,7 @@ func NewRoutes(router *chi.Mux, db *sql.DB) *chi.Mux {
 	}))
 
 	router.Route("/converter", func(router chi.Router) {
-		router.Post("/", services.ServeExtractByUrl())
+		router.Post("/", services.ServeExtractByUrl(hub, db))
 		router.Post("/concurrency", services.ServeExtractByUrlWithConcurrency())
 
 	})
@@ -55,6 +55,18 @@ func NewRoutes(router *chi.Mux, db *sql.DB) *chi.Mux {
 			}
 
 			services.CreateNewSocketUser(hub, connection, userId)
+
+		})
+		router.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			userId := chi.URLParam(r, "userId")
+			var socketEventResponse services.SocketEventStruct
+			socketEventResponse.EventName = "message response"
+			socketEventResponse.EventPayload = map[string]interface{}{
+				"username": "usernamestuff",
+				"message":  "file is complete",
+				"userID":   userId,
+			}
+			services.EmitToSpecificClient(hub, socketEventResponse, userId)
 
 		})
 	})
