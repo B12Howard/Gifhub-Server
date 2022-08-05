@@ -29,9 +29,14 @@ func NewRoutes(router *chi.Mux, db *sql.DB) *chi.Mux {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	router.Route("/converter", func(router chi.Router) {
+	router.Route("/getUser", func(router chi.Router) {
+		router.Post("/", services.GetUser(db))
+		router.Post("/getGifs", services.GetUserGifs(db))
+		router.Post("/getUsage", services.GetUserUsage(db))
+	})
+	router.Route("/useConverter", func(router chi.Router) {
 		router.Post("/", services.ServeExtractByUrl(hub, db))
-		router.Post("/concurrency", services.ServeExtractByUrlWithConcurrency())
+		router.Post("/withConcurrency", services.ServeExtractByUrlWithConcurrency())
 
 	})
 	router.Route("/concurrency", func(router chi.Router) {
