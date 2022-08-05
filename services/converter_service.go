@@ -26,7 +26,12 @@ type ExtractByUrlDataStartEnd struct {
 	Start    string
 	End      string
 	WsUserID string
+	Id       int
 }
+
+const (
+	GCPBucket = "created-gifs"
+)
 
 func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -190,37 +195,48 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func convertToGifConcurrentStartEnd(data ExtractByUrlDataStartEnd, hub *Hub, userID string, db *sql.DB) {
+func convertToGifConcurrentStartEnd(data ExtractByUrlDataStartEnd, hub *Hub, wsId string, db *sql.DB) {
 
 	id := uuid.New()
 	fileName := id.String()
 	fullPath := vidprocessing.OutDir + fileName + ".gif"
 	start := time.Now()
-	_, err := vidprocessing.ConvertToGifByUrlByStartEnd(data.Video, data.Start, data.End, fullPath)
+	_, errProcessing := vidprocessing.ConvertToGifByUrlByStartEnd(data.Video, data.Start, data.End, fullPath)
 
-	if err != nil {
-		panic(err)
+	if errProcessing != nil {
+		panic(errProcessing)
 	}
+
 	f, _ := os.Open(fullPath)
 	defer f.Close()
-
-	_, err = db.Exec("INSERT INTO usage (uid, duration, createdat) VALUES ($1, $2, $3)", userID, math.Round(time.Now().Sub(start).Seconds()), time.Now().UTC())
+	objectUrl := "https://storage.cloud.google.com/" + GCPBucket + fileName
+	_, err := db.Exec("INSERT INTO userfiles (url, createdat, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), data.Id)
 
 	if err != nil {
 		panic(err)
 	}
 
-	FileUpload("created-gifs", f, fileName)
+	errFileUpload := FileUpload(GCPBucket, f, fileName)
+
+	if errFileUpload != nil {
+		panic(errFileUpload)
+	}
+
+	_, errSaveFileUrl := db.Exec("INSERT INTO usage (uid, duration, createdat) VALUES ($1, $2, $3)", data.Id, math.Round(time.Now().Sub(start).Seconds()), time.Now().UTC())
+
+	if errFileUpload != nil {
+		panic(errSaveFileUrl)
+	}
 
 	var socketEventResponse SocketEventStruct
 	socketEventResponse.EventName = "message response"
 	socketEventResponse.EventPayload = map[string]interface{}{
 		"username": "usernamestuff",
 		"message":  "file is complete",
-		"userID":   userID,
+		"userID":   data.Id,
 	}
 
-	EmitToSpecificClient(hub, socketEventResponse, userID)
+	EmitToSpecificClient(hub, socketEventResponse, wsId)
 
 	return
 }
