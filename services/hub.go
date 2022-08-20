@@ -1,7 +1,5 @@
 package services
 
-// "github.com/go-chi/render"
-
 type Hub struct {
 	clients    map[*Client]bool
 	register   chan *Client
@@ -21,7 +19,7 @@ type Message struct {
 	Message string `json:"message"`
 }
 
-// For broadcast type socket
+// For broadcast type socket; keep as an example
 // type Hub struct {
 // 	clients   map[*websocket.Conn]bool
 // 	broadcast chan Message

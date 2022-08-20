@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	vidprocessing "gifconverter/services/vid-processing"
+	"gifconverter/shared/utility/delete_file"
 	"math"
 	"net/http"
 	"os"
@@ -39,11 +40,6 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 		start := r.URL.Query().Get("start")
 		dur := r.URL.Query().Get("dur")
 
-		// startI, err := strconv.Atoi(start)
-		// if err != nil {
-		// 	panic(err)
-		// }
-
 		durI, err := strconv.Atoi(dur)
 		if err != nil {
 			panic(err)
@@ -67,39 +63,37 @@ func ServeExtractByUrlGet() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Synchronous version
-// func ServeExtractByUrl() func(w http.ResponseWriter, r *http.Request) {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		var data ExtractByUrlData
+// Synchronous version - keeps http connection open; not useful but leaving it here for example usage
+func ServeExtractByUrlSynchronous() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var data ExtractByUrlData
 
-// 		decoder := json.NewDecoder(r.Body)
-// 		err := decoder.Decode(&data)
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&data)
 
-// 		if err != nil {
-// 			panic(err)
-// 		}
+		if err != nil {
+			panic(err)
+		}
 
-// 		fmt.Printf("Received args: %v %v %v\n", data.Video, data.Start, data.Dur)
+		id := uuid.New()
+		fileName := id.String()
+		fullPath := vidprocessing.OutDir + fileName + ".gif"
 
-// 		id := uuid.New()
-// 		fileName := id.String()
-// 		fullPath := vidprocessing.OutDir + fileName + ".gif"
+		file, err := vidprocessing.ConvertToGifByUrl(data.Video, data.Start, data.Dur, fullPath)
+		if err != nil {
+			panic(err)
+		}
 
-// 		file, err := vidprocessing.ConvertToGifByUrl(data.Video, data.Start, data.Dur, fullPath)
-// 		if err != nil {
-// 			panic(err)
-// 		}
+		rmvError := delete_file.RemoveFileFromDirectory(fullPath)
+		if rmvError != nil {
+			panic(rmvError)
+		}
 
-// 		rmvError := delete_file.RemoveFileFromDirectory(fullPath)
-// 		if rmvError != nil {
-// 			panic(rmvError)
-// 		}
+		render.Status(r, http.StatusFound)
+		render.JSON(w, r, file)
 
-// 		render.Status(r, http.StatusFound)
-// 		render.JSON(w, r, file)
-
-// 	}
-// }
+	}
+}
 
 // Asynchronous version
 func ServeExtractByUrl(hub *Hub, db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
@@ -150,16 +144,7 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 
 		for i := 0; i < elementCount; i++ {
 			wg.Add(1)
-			// choppedStart := data.Start + i*parts
-			// if i == 0 {
-			// 	choppedStart = data.Start
-			// }
 
-			// choppedEnd := choppedStart + parts
-			// if data.Dur < choppedEnd {
-			// 	choppedEnd = data.Dur - completed
-			// }
-			// completed = completed + parts
 			go convertToGifConcurrent(i, c, data, data.Start, data.Dur)
 		}
 
@@ -169,29 +154,8 @@ func ServeExtractByUrlWithConcurrency() func(w http.ResponseWriter, r *http.Requ
 			s = append(s, <-c)
 		}
 
-		//http://tech.nitoyon.com/en/blog/2016/01/07/go-animated-gif-gen/
-		// outGif := &gif.GIF{}
-
-		// for _, name := range s {
-		// 	f, _ := os.Open(vidprocessing.OutDir + name + ".gif")
-		// 	inGif, _ := gif.Decode(f)
-		// 	f.Close()
-
-		// 	outGif.Image = append(outGif.Image, inGif.(*image.Paletted))
-		// 	outGif.Delay = append(outGif.Delay, 0)
-		// }
-
-		// id := uuid.New().String()
-
-		// // save to out.gif
-		// f, _ := os.OpenFile(vidprocessing.OutDir+"final_"+id+".gif", os.O_WRONLY|os.O_CREATE, 0600)
-		// defer f.Close()
-		// gif.EncodeAll(f, outGif)
-
 		render.Status(r, http.StatusFound)
 		render.JSON(w, r, s)
-
-		// http.Redirect(w, r, "/gif/"+fileName, 302)
 	}
 }
 

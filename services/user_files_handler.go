@@ -15,6 +15,7 @@ type Pagination struct {
 	LastId   int          `json:"lastId"`
 	LastDate sql.NullTime `json:"lastDate"`
 	Records  []UserFile   `json:"records"`
+	Next     bool         `json:"next"`
 }
 
 type UserFile struct {
@@ -43,9 +44,11 @@ func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		if data.LastDate.Valid == false {
 			rows, errRows = db.Query(`SELECT id, url, createdat FROM userfiles ORDER BY createdat DESC, id DESC FETCH FIRST $1 ROWS ONLY`, data.RowCount)
 
-		} else {
+		} else if data.Next {
 			rows, errRows = db.Query(`SELECT id, url, createdat FROM userfiles WHERE (createdat, id) < ($1, $2) ORDER BY createdat DESC, id DESC FETCH FIRST $3 ROWS ONLY`, data.LastDate.Time, data.LastId, data.RowCount)
 
+		} else {
+			rows, errRows = db.Query(`SELECT id, url, createdat FROM userfiles WHERE (createdat, id) > ($1, $2) ORDER BY createdat DESC, id ASC FETCH FIRST $3 ROWS ONLY`, data.LastDate.Time, data.LastId, data.RowCount)
 		}
 
 		if errRows != nil {

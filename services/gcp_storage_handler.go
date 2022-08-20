@@ -14,7 +14,7 @@ import (
 func FileUpload(bucket string, object *os.File, fileName string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile("./gcpStorageAccountKey.json"))
-	fmt.Print("client", client)
+
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %v", err)
 	}
@@ -22,7 +22,6 @@ func FileUpload(bucket string, object *os.File, fileName string) error {
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
 	defer cancel()
-
 	// Upload an object with storage.Writer.
 	wc := client.Bucket(bucket).Object(fileName).NewWriter(ctx)
 	wc.ChunkSize = 0 // note retries are not supported for chunk size 0.
@@ -37,4 +36,8 @@ func FileUpload(bucket string, object *os.File, fileName string) error {
 	fmt.Fprintf(wc, "%v uploaded to %v.\n", fileName, bucket)
 
 	return nil
+}
+
+func FetchFile(bucket string, fileName string) string {
+	return ""
 }
