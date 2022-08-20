@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	// "github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -148,7 +147,6 @@ func (c *Client) writePump() {
 
 // CreateNewSocketUser creates a new socket user
 func CreateNewSocketUser(hub *Hub, connection *websocket.Conn, username string) {
-	// uniqueID := uuid.New()
 	client := &Client{
 		hub:                 hub,
 		webSocketConnection: connection,
