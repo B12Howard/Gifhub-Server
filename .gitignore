@@ -1,3 +1,6 @@
+# VSCode
+.vscode
+
 out/*
 !out/.index
 
@@ -6,3 +9,6 @@ serviceAccountKey.json
 gcpStorageAccountKey.json
 /tmp
 gifconverter
+
+# exported data
+.DS_Store
