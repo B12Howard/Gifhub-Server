@@ -26,3 +26,4 @@ Converting mp4 to gif is a long process that can go over the http time limit. A 
 - More editing options like cropping, quality (1080p resolution, more exotic stuff like bit rate or what not)
 - Add youtube-dl to get youtube videos
 - Add ability to parse m3u8 to access streaming videos
+- Have users connect with each other to share lists and content
