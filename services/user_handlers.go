@@ -3,7 +3,6 @@ package services
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -30,6 +29,9 @@ type UserRes struct {
 	ut         UserTypes
 }
 
+// GetUser takes in a UserQuery and queries the `users` table for a list of users
+// Returns a map of users. TODO should be returning a specific type
+// TODO Should implement keyset pagination like GetUserGifs
 func GetUser(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data UserQuery
@@ -39,7 +41,7 @@ func GetUser(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		errDecode := decoder.Decode(&data)
 
 		if errDecode != nil {
-			log.Fatalln(errDecode)
+			// log.Fatalln(errDecode)
 			render.JSON(w, r, ("Missing uid"))
 		}
 
@@ -50,7 +52,7 @@ func GetUser(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		err := row.Scan(&retrievedUser.id, &retrievedUser.createdat, &retrievedUserType.Name, &retrievedUserType.Filelimit, &retrievedUserType.Createdat, &retrievedUser.uid)
 
 		if err != nil {
-			log.Fatalln(err)
+			// log.Fatalln(err)
 			render.JSON(w, r, ("No User found with uid " + data.Uid))
 		}
 
@@ -64,27 +66,3 @@ func GetUser(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		render.JSON(w, r, payload)
 	}
 }
-
-func SetUserUsage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi"))
-}
-
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi"))
-}
-
-// func GetUserUsageById()
-
-// func SetUserUsage(w http.ResponseWriter, r *http.Request) {
-// 	render.Status(r, http.StatusCreated)
-// 	render.JSON(w, r, map[string]string{"stuff": "post"})
-// }
-// func PutHandler(w http.ResponseWriter, r *http.Request) {
-// 	render.Status(r, http.StatusCreated)
-// 	render.JSON(w, r, map[string]string{"stuff": "put"})
-// }
-
-// func DeleteHandler(w http.ResponseWriter, r *http.Request) {
-// 	render.Status(r, http.StatusCreated)
-// 	render.JSON(w, r, map[string]string{"stuff": "delete"})
-// }
