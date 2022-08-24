@@ -26,7 +26,10 @@ Use the command `go run github.com/cosmtrek/air` to run with hot reload
 
 #### TODO Docker
 
-#### TODO Postman Collection
+#### Postman Collection
+Env and Collection here
+[PostmanEnvCollection.zip](https://github.com/B12Howard/gifcreator/files/9418059/PostmanEnvCollection.zip)
+
 
 ## Architecture
 ![Gifhub_simplified_architecture drawio](https://user-images.githubusercontent.com/39282569/168500512-22550801-b681-4c4d-93e5-b58a395327bf.png)
