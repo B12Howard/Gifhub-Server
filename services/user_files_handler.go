@@ -4,30 +4,33 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/render"
 )
 
-type Pagination struct {
-	RowCount int          `json:"rowCount"`
-	LastId   int          `json:"lastId"`
-	LastDate sql.NullTime `json:"lastDate"`
-	Records  []UserFile   `json:"records"`
-	Next     bool         `json:"next"`
+type UserFilePagination struct {
+	RowCount int              `json:"rowCount"`
+	LastId   int              `json:"lastId"`
+	LastDate sql.NullTime     `json:"lastDate"`
+	Records  []UserFileRecord `json:"records"`
+	Next     bool             `json:"next"`
 }
 
-type UserFile struct {
+type UserFileRecord struct {
 	Id        int          `json:"id"`
 	Url       string       `json:"url"`
 	Createdat sql.NullTime `json:"createdat"`
 }
 
+// GetUserGifs takes in a UserFilePagination and queries the `userfiles` table for gifs converted and saved to the remote storage (GCP Cloud Storage).
+// Uses keyset pagination.
+// Returns a UserFilePagination
+// TODO Should only get the past 24 hours because 24 hours is the time limit the converted files live in the remote storage
 func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		var data Pagination
+		var data UserFilePagination
 		var rows *sql.Rows
 		var errRows error
 
@@ -37,7 +40,7 @@ func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		errDecode := decoder.Decode(&data)
 
 		if errDecode != nil {
-			log.Fatalln(errDecode)
+			// log.Fatalln(errDecode)
 			render.JSON(w, r, ("Missing number of pagination rows"))
 		}
 
@@ -52,12 +55,12 @@ func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		if errRows != nil {
-			log.Fatalln(errRows)
+			// log.Fatalln(errRows)
 			render.JSON(w, r, ("No records found"))
 		}
 
 		for rows.Next() {
-			userFile := UserFile{}
+			userFile := UserFileRecord{}
 			rows.Scan(&userFile.Id, &userFile.Url, &userFile.Createdat)
 			data.Records = append(data.Records, userFile)
 		}
