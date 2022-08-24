@@ -40,6 +40,8 @@ Converting mp4 to gif is a long process that can go over the http time limit. A 
 
 
 ### Future Improvements
+[Trello](https://trello.com/b/34GbTIKL/gifhub)
+
 - Spin off notification into its own thing: Redis
 - Clip mp4 to mp4 clips with sound. Compression will be important
 - Spin off conversion into it's own service: AWS Lambda with FFMPEG support
