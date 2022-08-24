@@ -11,6 +11,7 @@ import (
 	"google.golang.org/api/option"
 )
 
+// FileUpload takes in a file and saves it to a specified GCP Cloud Storage bucket
 func FileUpload(bucket string, object *os.File, fileName string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile("./gcpStorageAccountKey.json"))
@@ -36,8 +37,4 @@ func FileUpload(bucket string, object *os.File, fileName string) error {
 	fmt.Fprintf(wc, "%v uploaded to %v.\n", fileName, bucket)
 
 	return nil
-}
-
-func FetchFile(bucket string, fileName string) string {
-	return ""
 }

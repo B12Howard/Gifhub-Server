@@ -12,6 +12,9 @@ import (
 	"google.golang.org/api/option"
 )
 
+// Auth checks the request's jwt token for validity.
+// Returns for invalid jwt tokens status 404
+// Continues
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serviceAccountKeyFilePath, err := filepath.Abs("./serviceAccountKey.json")
@@ -34,7 +37,7 @@ func Auth(next http.Handler) http.Handler {
 		idToken := strings.TrimSpace(strings.Replace(header, "Bearer", "", 1))
 		token, err := auth.VerifyIDToken(context.Background(), idToken)
 		if err != nil {
-			render.Status(r, http.StatusInternalServerError)
+			render.Status(r, http.StatusUnauthorized)
 			render.JSON(w, r, err.Error())
 			return
 		}

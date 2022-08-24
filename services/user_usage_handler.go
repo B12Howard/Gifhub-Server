@@ -3,7 +3,6 @@ package services
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -14,7 +13,7 @@ const (
 	defaultTimespan = 30
 )
 
-type UserUsageQuery struct {
+type UserUsagePagination struct {
 	Uid       string       `json:"uid"`
 	StartDate sql.NullTime `json:"startDate"`
 	Timespan  int          `json:"timespan"` // days
@@ -33,9 +32,14 @@ type UserUsageRes struct {
 	TotalDuration int         `json:"totalduration"`
 }
 
+// TODO Implement User Usage CRUD
+
+// GetUserUsage takes in a UserUsagePagination and queries the `usage` table.
+// Returns a UserUsageRes
+// TODO implement keyset pagination like GetUserGifs
 func GetUserUsage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var data UserUsageQuery
+		var data UserUsagePagination
 		var payload UserUsageRes
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
@@ -43,7 +47,7 @@ func GetUserUsage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		errDecode := decoder.Decode(&data)
 
 		if errDecode != nil {
-			log.Fatalln(errDecode)
+			// log.Fatalln(errDecode)
 			render.JSON(w, r, ("Bad request. Invalid data sent"))
 		}
 		now := time.Now().UTC()
@@ -57,7 +61,7 @@ func GetUserUsage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		total := db.QueryRow(`SELECT SUM(UsageQuery.d) AS total FROM (SELECT Usage.id, Usage.duration AS d, Usage.createdat FROM usage Usage INNER JOIN users Users ON Users.id=Usage.uid WHERE Users.uid=$1 AND Usage.createdat between $2 AND $3) UsageQuery`, data.Uid, timeLowerBound, now)
 
 		if errRows != nil {
-			log.Fatalln(errRows)
+			// log.Fatalln(errRows)
 			render.JSON(w, r, ("Error fetching rows"))
 		}
 

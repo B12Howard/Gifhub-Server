@@ -1,13 +1,32 @@
 # gifcreator
 
 ### Requirements
-PostgreSQL for storing user usage and user created file links
-Firebase Authentication for login 
-GCP Cloud Storage to temporarily store user converted files 
-FFMPEG installed on local machine or host machine
+[PostgreSQL](https://www.postgresql.org/) for storing user usage and user created file links
+[Firebase](https://firebase.google.com/) Authentication for login 
+[GCP Cloud Storage](https://cloud.google.com/) to temporarily store user converted files 
+[FFMPEG](https://ffmpeg.org/) installed on local machine or host machine 
 
-### Run
-Use the command go run github.com/cosmtrek/air to run with hot reload
+
+### Getting Started
+Install FFMPEG, PostgreSQL. Install Go dependencies.
+
+#### Database
+Put PostgreSQL credentials in database.go.
+
+#### Enable External Service Credentials
+Enable the GCP Cloud Storage service. Put the key into example.gcpStorageAccountKey.json. Rename file to gcpStorageAccountKey.json.
+
+Create a Firebase account and enable Firebase Authentication. Put the key into example.serviceAccountKey.json. Rename file to serviceAccountKey.json.
+
+#### Run
+Use the command `go run github.com/cosmtrek/air` to run with hot reload
+
+#### Client
+[https://github.com/B12Howard/gifiviewer](https://github.com/B12Howard/gifiviewer)
+
+#### TODO Docker
+
+#### TODO Postman Collection
 
 ## Architecture
 ![Gifhub_simplified_architecture drawio](https://user-images.githubusercontent.com/39282569/168500512-22550801-b681-4c4d-93e5-b58a395327bf.png)
