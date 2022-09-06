@@ -29,7 +29,7 @@ func NewDb() *sql.DB {
 	db, err := sql.Open("postgres", psqlInfo)
 
 	if err != nil {
-		log.Fatal((err))
+		log.Println(err)
 	}
 
 	return db

@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -21,10 +22,10 @@ type UserUsagePagination struct {
 }
 
 type UserUsage struct {
-	Id        int          `json:"id"`
-	Uid       string       `json:"uid"`
-	Duration  int          `json:"duration"`
-	Createdat sql.NullTime `json:"createdat"`
+	Id         int          `json:"id"`
+	Uid        string       `json:"uid"`
+	Duration   int          `json:"duration"`
+	Created_at sql.NullTime `json:"created_at"`
 }
 
 type UserUsageRes struct {
@@ -47,8 +48,10 @@ func GetUserUsage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		errDecode := decoder.Decode(&data)
 
 		if errDecode != nil {
-			// log.Fatalln(errDecode)
+			log.Println(errDecode)
 			render.JSON(w, r, ("Bad request. Invalid data sent"))
+
+			return
 		}
 		now := time.Now().UTC()
 		if data.Timespan == 0 {
@@ -57,17 +60,19 @@ func GetUserUsage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		timeLowerBound := now.AddDate(0, 0, -data.Timespan)
 
-		rows, errRows := db.Query(`SELECT Usage.id, Usage.duration, Usage.createdat FROM usage Usage INNER JOIN users Users ON Users.id=Usage.uid WHERE Users.uid=$1 AND Usage.createdat between $2 AND $3`, data.Uid, timeLowerBound, now)
-		total := db.QueryRow(`SELECT SUM(UsageQuery.d) AS total FROM (SELECT Usage.id, Usage.duration AS d, Usage.createdat FROM usage Usage INNER JOIN users Users ON Users.id=Usage.uid WHERE Users.uid=$1 AND Usage.createdat between $2 AND $3) UsageQuery`, data.Uid, timeLowerBound, now)
+		rows, errRows := db.Query(`SELECT Usage.id, Usage.duration, Usage.created_at FROM usage Usage INNER JOIN users Users ON Users.id=Usage.uid WHERE Users.uid=$1 AND Usage.created_at between $2 AND $3`, data.Uid, timeLowerBound, now)
+		total := db.QueryRow(`SELECT SUM(UsageQuery.d) AS total FROM (SELECT Usage.id, Usage.duration AS d, Usage.created_at FROM usage Usage INNER JOIN users Users ON Users.id=Usage.uid WHERE Users.uid=$1 AND Usage.created_at between $2 AND $3) UsageQuery`, data.Uid, timeLowerBound, now)
 
 		if errRows != nil {
-			// log.Fatalln(errRows)
+			log.Println(errRows)
 			render.JSON(w, r, ("Error fetching rows"))
+
+			return
 		}
 
 		for rows.Next() {
 			userUsage := UserUsage{}
-			rows.Scan(&userUsage.Id, &userUsage.Duration, &userUsage.Createdat)
+			rows.Scan(&userUsage.Id, &userUsage.Duration, &userUsage.Created_at)
 			payload.Usage = append(payload.Usage, userUsage)
 		}
 

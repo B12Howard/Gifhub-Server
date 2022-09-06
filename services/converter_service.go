@@ -115,7 +115,7 @@ func completeConvertToGifByStartEnd(data VideoToGifByStartEnd, hub *Hub, wsId st
 	f, _ := os.Open(fullPath)
 	defer f.Close()
 	objectUrl := "https://storage.cloud.google.com/" + GCPBucket + fileName
-	_, err := db.Exec("INSERT INTO userfiles (url, createdat, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), data.Id)
+	_, err := db.Exec("INSERT INTO user_files (url, created_at, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), data.Id)
 
 	if err != nil {
 		panic(err)
@@ -127,7 +127,7 @@ func completeConvertToGifByStartEnd(data VideoToGifByStartEnd, hub *Hub, wsId st
 		panic(errFileUpload)
 	}
 
-	_, errSaveFileUrl := db.Exec("INSERT INTO usage (uid, duration, createdat) VALUES ($1, $2, $3)", data.Id, math.Round(time.Now().Sub(start).Seconds()), time.Now().UTC())
+	_, errSaveFileUrl := db.Exec("INSERT INTO usage (uid, duration, created_at) VALUES ($1, $2, $3)", data.Id, math.Round(time.Now().Sub(start).Seconds()), time.Now().UTC())
 
 	if errFileUpload != nil {
 		panic(errSaveFileUrl)

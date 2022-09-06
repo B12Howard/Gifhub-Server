@@ -16,11 +16,6 @@ type MyHandler struct {
 	db *sql.DB
 }
 
-type Todo struct {
-	item string
-	id   int
-}
-
 func main() {
 	fmt.Println("Loading...")
 	port := os.Getenv("PORT")
