@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	vidprocessing "gifconverter/services/vid-processing"
 	"gifconverter/shared/utility/delete_file"
+	"log"
 	"math"
 	"net/http"
 	"os"
@@ -40,17 +41,23 @@ func ConvertVideoToGif(hub *Hub, db *sql.DB) func(w http.ResponseWriter, r *http
 		err := decoder.Decode(&data)
 
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, "Error: Bad Video Parameters")
+			return
 		}
 
 		go completeConvertToGifByStartEnd(data, hub, data.WsUserID, db)
 
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, "Error While Converting")
+			return
 		}
 
 		render.Status(r, http.StatusOK)
-		render.JSON(w, r, "procressing file")
+		render.JSON(w, r, "Procressing File")
 
 	}
 }
@@ -66,7 +73,10 @@ func ConvertVIdeosToGifsStitchTogether() func(w http.ResponseWriter, r *http.Req
 		err := decoder.Decode(&data)
 
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, "Error: Bad Video Parameters")
+			return
 		}
 
 		elementCount := 2
@@ -108,42 +118,85 @@ func completeConvertToGifByStartEnd(data VideoToGifByStartEnd, hub *Hub, wsId st
 	start := time.Now()
 	_, errProcessing := vidprocessing.ConvertToGifCutByStartEnd(data.Video, data.Start, data.End, fullPath)
 
+	var socketEventResponse SocketEventStruct
+	socketEventResponse.EventName = "message response"
+
 	if errProcessing != nil {
-		panic(errProcessing)
+		log.Panic(errProcessing)
+		socketEventResponse.EventPayload = map[string]interface{}{
+			"username": fileName,
+			"message":  "Error processing gifs",
+			"userID":   data.WsUserID,
+		}
+
+		EmitToSpecificClient(hub, socketEventResponse, wsId)
+
+		return
+	}
+
+	objectUrl := "https://storage.cloud.google.com/" + GCPBucket + "/" + fileName
+
+	retrievedUser := &UserRes{}
+	row := db.QueryRow(`SELECT Users.id FROM users Users WHERE uid = $1`, data.WsUserID)
+	rowErr := row.Scan(&retrievedUser.id)
+
+	if rowErr != nil {
+		log.Println(rowErr)
 	}
 
 	f, _ := os.Open(fullPath)
 	defer f.Close()
-	objectUrl := "https://storage.cloud.google.com/" + GCPBucket + fileName
-	_, err := db.Exec("INSERT INTO user_files (url, created_at, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), data.Id)
+
+	_, err := db.Exec("INSERT INTO user_files (url, created_at, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), &retrievedUser.id)
 
 	if err != nil {
-		panic(err)
+		log.Println(err)
+		socketEventResponse.EventPayload = map[string]interface{}{
+			"username": fileName,
+			"message":  "Error saving file url",
+			"userID":   data.WsUserID,
+		}
+
+		EmitToSpecificClient(hub, socketEventResponse, wsId)
+
+		return
 	}
 
 	errFileUpload := FileUpload(GCPBucket, f, fileName)
 
 	if errFileUpload != nil {
-		panic(errFileUpload)
+		log.Println(errFileUpload)
+
+		socketEventResponse.EventPayload = map[string]interface{}{
+			"username": fileName,
+			"message":  "Error uploading file",
+			"userID":   data.WsUserID,
+		}
+
+		EmitToSpecificClient(hub, socketEventResponse, wsId)
+
+		return
 	}
 
 	_, errSaveFileUrl := db.Exec("INSERT INTO usage (uid, duration, created_at) VALUES ($1, $2, $3)", data.Id, math.Round(time.Now().Sub(start).Seconds()), time.Now().UTC())
 
 	if errFileUpload != nil {
-		panic(errSaveFileUrl)
-	}
+		log.Println(errSaveFileUrl)
 
-	var socketEventResponse SocketEventStruct
-	socketEventResponse.EventName = "message response"
-	socketEventResponse.EventPayload = map[string]interface{}{
-		"username": "usernamestuff",
-		"message":  "file is complete",
-		"userID":   data.Id,
+		socketEventResponse.EventPayload = map[string]interface{}{
+			"username": fileName,
+			"message":  "Error saving uploaded file",
+			"userID":   data.WsUserID,
+		}
+
+		EmitToSpecificClient(hub, socketEventResponse, wsId)
+
+		return
 	}
 
 	rmvError := delete_file.RemoveFileFromDirectory(fullPath)
 	if rmvError != nil {
-		panic(rmvError)
+		log.Println(rmvError)
 	}
 
 	EmitToSpecificClient(hub, socketEventResponse, wsId)
@@ -161,14 +214,15 @@ func completeConvertVideosToGifs(i int, c chan []byte, data VideoToGifByDuration
 
 	file, err := vidprocessing.ConvertToGifCutByDuration(data.Video, choppedStart, choppedEnd, fullPath)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
+	} else {
+		c <- file
 	}
 
-	c <- file
-
 	rmvError := delete_file.RemoveFileFromDirectory(fullPath)
+
 	if rmvError != nil {
-		panic(rmvError)
+		log.Println(rmvError)
 	}
 
 	return
