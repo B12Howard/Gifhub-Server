@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -30,6 +29,6 @@ func main() {
 	fmt.Println("Ready!")
 
 	http.ListenAndServe(":5020", router)
-	log.Fatalln("connected to port 5000")
+	fmt.Println("connected to port 5020")
 
 }

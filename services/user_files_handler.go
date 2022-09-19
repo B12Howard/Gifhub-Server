@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+	"time"
 
 	"github.com/go-chi/render"
 )
@@ -22,6 +24,14 @@ type UserFile struct {
 	Id         int          `json:"id"`
 	Url        string       `json:"url"`
 	Created_at sql.NullTime `json:"created_at"`
+}
+
+type DeleteFile struct {
+	GifId int `json:"gifId"`
+}
+
+type GCPAuthenticatedUrl struct {
+	AuthenticatedUrl string `json:"authenticatedUrl"`
 }
 
 // GetUserGifs takes in a UserFilePagination and queries the `userfiles` table for gifs converted and saved to the remote storage (GCP Cloud Storage).
@@ -48,13 +58,13 @@ func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		if data.LastDate.Valid == false {
-			rows, errRows = db.Query(`SELECT id, url, created_at FROM user_files ORDER BY created_at DESC, id DESC FETCH FIRST $1 ROWS ONLY`, data.RowCount)
+			rows, errRows = db.Query(`SELECT id, url, created_at FROM user_files WHERE deleted_at IS NULL ORDER BY created_at DESC, id DESC FETCH FIRST $1 ROWS ONLY`, data.RowCount)
 
 		} else if data.Next {
-			rows, errRows = db.Query(`SELECT id, url, created_at FROM user_files WHERE (created_at, id) < ($1, $2) ORDER BY created_at DESC, id DESC FETCH FIRST $3 ROWS ONLY`, data.LastDate.Time, data.LastId, data.RowCount)
+			rows, errRows = db.Query(`SELECT id, url, created_at FROM user_files WHERE deleted_at IS NULL AND (created_at, id) < ($1, $2) ORDER BY created_at DESC, id DESC FETCH FIRST $3 ROWS ONLY`, data.LastDate.Time, data.LastId, data.RowCount)
 
 		} else {
-			rows, errRows = db.Query(`SELECT id, url, created_at FROM user_files WHERE (created_at, id) > ($1, $2) ORDER BY created_at DESC, id ASC FETCH FIRST $3 ROWS ONLY`, data.LastDate.Time, data.LastId, data.RowCount)
+			rows, errRows = db.Query(`SELECT id, url, created_at FROM user_files WHERE deleted_at IS NULL AND (created_at, id) > ($1, $2) ORDER BY created_at DESC, id ASC FETCH FIRST $3 ROWS ONLY`, data.LastDate.Time, data.LastId, data.RowCount)
 		}
 
 		if errRows != nil {
@@ -75,5 +85,69 @@ func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, data)
+	}
+}
+
+func DeleteGifById(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var data DeleteFile
+
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+
+		errDecode := decoder.Decode(&data)
+
+		if errDecode != nil {
+			log.Println(errDecode)
+			render.JSON(w, r, ("Missing number of pagination rows"))
+
+			return
+		}
+
+		_, deleteErr := db.Exec("UPDATE user_files SET deleted_at=$1 WHERE id=$2", time.Now().UTC(), data.GifId)
+
+		if deleteErr != nil {
+			log.Println(deleteErr)
+		}
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, "ok!!")
+	}
+}
+
+func GetUserImage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var data GCPAuthenticatedUrl
+
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+
+		errDecode := decoder.Decode(&data)
+
+		if errDecode != nil {
+			log.Println(errDecode)
+			render.JSON(w, r, ("Invalid Image Link"))
+
+			return
+		}
+
+		re := regexp.MustCompile(`^https.*` + GCPBucket + "/")
+
+		object := re.ReplaceAllString(data.AuthenticatedUrl, "")
+
+		signedUrl, err := GenerateV4GetObjectSignedURL(GCPBucket, object)
+
+		if err != nil {
+			render.JSON(w, r, (err))
+
+			return
+		}
+
+		payload := map[string]interface{}{
+			"authenticatedUrl": signedUrl,
+		}
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, payload)
 	}
 }

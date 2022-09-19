@@ -63,10 +63,10 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 	case "message":
 		log.Printf("Message Event triggered")
 		selectedUserID := socketEventPayload.EventPayload.(map[string]interface{})["userID"].(string)
-		socketEventResponse.EventName = "message response"
+		socketEventResponse.EventName = "message"
 		socketEventResponse.EventPayload = map[string]interface{}{
 			"username": getUsernameByUserID(client.hub, selectedUserID),
-			"message":  socketEventPayload.EventPayload.(map[string]interface{})["message"],
+			"message":  socketEventPayload.EventPayload.(map[string]interface{})["message"].(string),
 			"userID":   selectedUserID,
 		}
 		EmitToSpecificClient(client.hub, socketEventResponse, selectedUserID)
