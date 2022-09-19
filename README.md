@@ -28,7 +28,7 @@ Use the command `go run github.com/cosmtrek/air` to run with hot reload
 
 #### Postman Collection
 Env and Collection here
-[PostmanEnvCollection.zip](https://github.com/B12Howard/gifcreator/files/9418059/PostmanEnvCollection.zip)
+[PostmanEnvCollection20220906.zip](https://github.com/B12Howard/gifcreator/files/9500089/PostmanEnvCollection20220906.zip)
 
 
 ## Architecture
