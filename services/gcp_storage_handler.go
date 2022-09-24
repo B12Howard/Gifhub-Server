@@ -40,10 +40,7 @@ func FileUpload(bucket string, object *os.File, fileName string) error {
 }
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
-func GenerateV4GetObjectSignedURL(bucket, object string) (string, error) {
-	// bucket := "bucket-name"
-	// object := "object-name"
-
+func GenerateV4GetObjectSignedURL(bucketName, object string) (string, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile("./gcpStorageAccountKey.json"))
 
@@ -67,14 +64,10 @@ func GenerateV4GetObjectSignedURL(bucket, object string) (string, error) {
 		Expires: time.Now().Add(15 * time.Minute),
 	}
 
-	u, err := client.Bucket(bucket).SignedURL(object, opts)
+	u, err := client.Bucket(bucketName).SignedURL(object, opts)
 	if err != nil {
-		return "", fmt.Errorf("Bucket(%q).SignedURL: %v", bucket, err)
+		return "", fmt.Errorf("Bucket(%q).SignedURL: %v", bucketName, err)
 	}
 
-	// fmt.Fprintln(w, "Generated GET signed URL:")
-	// fmt.Fprintf(w, "%q\n", u)
-	// fmt.Fprintln(w, "You can use this URL with any user agent, for example:")
-	// fmt.Fprintf(w, "curl %q\n", u)
 	return u, nil
 }
