@@ -3,7 +3,7 @@
 
 out/*
 !out/.index
-
+config.json
 .env
 serviceAccountKey.json
 gcpStorageAccountKey.json
