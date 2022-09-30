@@ -67,6 +67,7 @@ func GenerateV4GetObjectSignedURL(bucketName, object string) (string, error) {
 	var gcpConfig GCPCloudStorageConfig
 	viperErr = viper.Unmarshal(&gcpConfig)
 	b, _ := json.Marshal(gcpConfig)
+  
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON(b))
 
