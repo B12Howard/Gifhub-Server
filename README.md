@@ -14,9 +14,9 @@ Install FFMPEG, PostgreSQL. Install Go dependencies.
 Put PostgreSQL credentials in database.go.
 
 #### Enable External Service Credentials
-Enable the GCP Cloud Storage service. Put the key into example.gcpStorageAccountKey.json. Rename file to gcpStorageAccountKey.json.
+Enable the GCP Cloud Storage service. Put the keys into config.json under GCPCLOUDSTORAGE
 
-Create a Firebase account and enable Firebase Authentication. Put the key into example.serviceAccountKey.json. Rename file to serviceAccountKey.json.
+Create a Firebase account and enable Firebase Authentication. Put the keys into config.json under FIREBASE
 
 #### Run
 Use the command `go run github.com/cosmtrek/air` to run with hot reload
