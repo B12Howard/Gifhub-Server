@@ -3,7 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	customMiddleware "gifconverter/router/custom_middleware"
+
+	// customMiddleware "gifconverter/router/custom_middleware"
 	"gifconverter/services"
 	"log"
 	"net/http"
@@ -63,7 +64,7 @@ func NewRoutes(router *chi.Mux, db *sql.DB) *chi.Mux {
 	})
 
 	router.Group(func(router chi.Router) {
-		router.Use(customMiddleware.Auth)
+		router.Use(Auth)
 		router.Route("/getUser", func(router chi.Router) {
 			router.Post("/", services.GetUser(db))
 			router.Post("/getGifs", services.GetUserGifs(db))

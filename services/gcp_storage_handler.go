@@ -2,19 +2,33 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/spf13/viper"
 	"google.golang.org/api/option"
 )
 
 // FileUpload takes in a file and saves it to a specified GCP Cloud Storage bucket
 func FileUpload(bucket string, object *os.File, fileName string) error {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+	viper.AddConfigPath("../config/config")
+	viperErr := viper.ReadInConfig()
+
+	if viperErr != nil {
+		fmt.Printf("Error reading config file, %s", viperErr)
+	}
+
+	var gcpConfig GCPCloudStorageConfig
+	viperErr = viper.Unmarshal(&gcpConfig)
+	b, _ := json.Marshal(gcpConfig.GCPCLOUDSTORAGE)
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("./gcpStorageAccountKey.json"))
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON(b))
 
 	if err != nil {
 		return fmt.Errorf("storage.NewClient: %v", err)
@@ -41,8 +55,20 @@ func FileUpload(bucket string, object *os.File, fileName string) error {
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
 func GenerateV4GetObjectSignedURL(bucketName, object string) (string, error) {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+	viper.AddConfigPath("../config/config")
+	viperErr := viper.ReadInConfig()
+
+	if viperErr != nil {
+		fmt.Printf("Error reading config file, %s", viperErr)
+	}
+
+	var gcpConfig GCPCloudStorageConfig
+	viperErr = viper.Unmarshal(&gcpConfig)
+	b, _ := json.Marshal(gcpConfig)
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("./gcpStorageAccountKey.json"))
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON(b))
 
 	if err != nil {
 		return "", fmt.Errorf("storage.NewClient: %v", err)
