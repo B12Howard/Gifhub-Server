@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -15,9 +16,13 @@ import (
 
 // FileUpload takes in a file and saves it to a specified GCP Cloud Storage bucket
 func FileUpload(bucket string, object *os.File, fileName string) error {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
 	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath("../config/config")
+	viper.AddConfigPath(exPath + "/config")
 	viperErr := viper.ReadInConfig()
 
 	if viperErr != nil {
@@ -55,9 +60,15 @@ func FileUpload(bucket string, object *os.File, fileName string) error {
 
 // generateV4GetObjectSignedURL generates object signed URL with GET method.
 func GenerateV4GetObjectSignedURL(bucketName, object string) (string, error) {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	fmt.Println("generate", exPath)
+
 	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath("../config/config")
+	viper.AddConfigPath(exPath + "/config")
 	viperErr := viper.ReadInConfig()
 
 	if viperErr != nil {
@@ -66,7 +77,9 @@ func GenerateV4GetObjectSignedURL(bucketName, object string) (string, error) {
 
 	var gcpConfig GCPCloudStorageConfig
 	viperErr = viper.Unmarshal(&gcpConfig)
-	b, _ := json.Marshal(gcpConfig)
+	b, _ := json.Marshal(gcpConfig.GCPCLOUDSTORAGE)
+	fmt.Println("v", b)
+
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON(b))
 
