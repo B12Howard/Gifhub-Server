@@ -73,13 +73,13 @@ func GetUserGifs(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 			return
 		}
-
 		for rows.Next() {
 			userFile := UserFile{}
 			rows.Scan(&userFile.Id, &userFile.Url, &userFile.Created_at)
 			data.Records = append(data.Records, userFile)
 		}
-		fmt.Print(&data.Records[0])
+		fmt.Println(len(data.Records))
+
 		data.LastId = data.Records[len(data.Records)-1].Id
 		data.LastDate = data.Records[len(data.Records)-1].Created_at
 
@@ -118,7 +118,7 @@ func DeleteGifById(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 func GetUserImage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data GCPAuthenticatedUrl
-
+		fmt.Println("hello")
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 
@@ -136,7 +136,7 @@ func GetUserImage(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		object := re.ReplaceAllString(data.AuthenticatedUrl, "")
 
 		signedUrl, err := GenerateV4GetObjectSignedURL(GCPBucket, object)
-
+		fmt.Println(signedUrl)
 		if err != nil {
 			render.JSON(w, r, (err))
 
