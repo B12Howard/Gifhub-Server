@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	firebase "firebase.google.com/go"
@@ -33,9 +35,14 @@ type FirebaseServiceAccountConfig struct {
 // Continues
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex)
+		fmt.Println("ex", exPath)
 		viper.SetConfigName("config")
-		viper.SetConfigType("yml")
-		viper.AddConfigPath("./config/config")
+		viper.AddConfigPath(exPath + "/config")
 		viperErr := viper.ReadInConfig()
 
 		if viperErr != nil {
