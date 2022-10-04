@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"encoding/json"
 	vidprocessing "gifconverter/services/vid-processing"
 	"gifconverter/shared/utility/delete_file"
@@ -8,9 +9,9 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
-
-	"database/sql"
 
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -36,7 +37,7 @@ type VideoToGifByStartEnd struct {
 func ConvertVideoToGif(hub *Hub, db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data VideoToGifByStartEnd
-
+		retrievedUser := &UserRoleLimits{}
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&data)
 
@@ -47,7 +48,39 @@ func ConvertVideoToGif(hub *Hub, db *sql.DB) func(w http.ResponseWriter, r *http
 			return
 		}
 
-		go completeConvertToGifByStartEnd(data, hub, data.WsUserID, db)
+		row := db.QueryRow(`SELECT u.id, ut.max_gif_time, ut.file_size_limit, ut.usage_limit FROM users u JOIN user_types ut on ut.id=u.user_type_id WHERE uid = $1 `, data.WsUserID)
+		rowErr := row.Scan(&retrievedUser.id, &retrievedUser.max_gif_time, &retrievedUser.file_size_limit, &retrievedUser.usage_limit)
+
+		if rowErr != nil {
+			log.Println(rowErr)
+		}
+
+		start := strings.Split(data.Start, ":")
+		end := strings.Split(data.End, ":")
+
+		startHour, _ := strconv.Atoi(start[0])
+		startMin, _ := strconv.Atoi(start[1])
+		startSec, _ := strconv.Atoi(start[2])
+		endHour, _ := strconv.Atoi(end[0])
+		endMin, _ := strconv.Atoi(end[1])
+		endSec, _ := strconv.Atoi(end[2])
+
+		t1 := time.Date(1984, time.November, 3, startHour, startMin, startSec, 0, time.UTC)
+		t2 := time.Date(1984, time.November, 3, endHour, endMin, endSec, 0, time.UTC)
+
+		if t2.Sub(t1).Seconds() <= float64(0) {
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, "Start time has to be before the end time")
+			return
+		}
+
+		if t2.Sub(t1).Seconds() > float64(retrievedUser.max_gif_time) {
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, "Gif duration is longer than your subscription limit")
+			return
+		}
+
+		go completeConvertToGifByStartEnd(data, hub, data.WsUserID, db, retrievedUser.id)
 
 		if err != nil {
 			log.Println(err)
@@ -110,7 +143,7 @@ func ConvertVIdeosToGifsStitchTogether() func(w http.ResponseWriter, r *http.Req
 // If successful the gif is saved to GCP.
 // The duration/ usage time is saved to Postgres
 // If successful send the user a message via websocket
-func completeConvertToGifByStartEnd(data VideoToGifByStartEnd, hub *Hub, wsId string, db *sql.DB) {
+func completeConvertToGifByStartEnd(data VideoToGifByStartEnd, hub *Hub, wsId string, db *sql.DB, retrievedUserId int) {
 
 	id := uuid.New()
 	fileName := id.String()
@@ -136,18 +169,10 @@ func completeConvertToGifByStartEnd(data VideoToGifByStartEnd, hub *Hub, wsId st
 
 	objectUrl := "https://storage.cloud.google.com/" + GCPBucket + "/" + fileName
 
-	retrievedUser := &UserRes{}
-	row := db.QueryRow(`SELECT Users.id FROM users Users WHERE uid = $1`, data.WsUserID)
-	rowErr := row.Scan(&retrievedUser.id)
-
-	if rowErr != nil {
-		log.Println(rowErr)
-	}
-
 	f, _ := os.Open(fullPath)
 	defer f.Close()
 
-	_, err := db.Exec("INSERT INTO user_files (url, created_at, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), &retrievedUser.id)
+	_, err := db.Exec("INSERT INTO user_files (url, created_at, uid) VALUES ($1, $2, $3)", objectUrl, time.Now().UTC(), retrievedUserId)
 
 	if err != nil {
 		log.Println(err)

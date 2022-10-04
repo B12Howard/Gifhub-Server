@@ -30,6 +30,13 @@ type UserRes struct {
 	ut           UserTypes
 }
 
+type UserRoleLimits struct {
+	id              int
+	max_gif_time    int
+	file_size_limit int
+	usage_limit     int
+}
+
 func GetUser(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data UserQuery
