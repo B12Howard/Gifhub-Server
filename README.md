@@ -32,8 +32,7 @@ Env and Collection here
 
 
 ## Architecture
-![Gifhub_simplified_architecture Drawio](https://user-images.githubusercontent.com/39282569/193721666-96ba9fae-7f5e-4867-ac0b-f847fc8e2c08.png)
-
+![Gifhub_simplified_architecture drawio (3)](https://user-images.githubusercontent.com/39282569/196551643-9d64515f-128e-4c8c-af39-071ce5d43226.png)
 
 
 ## Propsed solutions for handling the long task of video encoding and user wait
