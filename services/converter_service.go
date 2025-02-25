@@ -3,8 +3,8 @@ package services
 import (
 	"database/sql"
 	"encoding/json"
-	vidprocessing "gifconverter/services/vid-processing"
-	"gifconverter/shared/utility/delete_file"
+	vidprocessing "kithli-api/services/vid-processing"
+	"kithli-api/shared/utility/delete_file"
 	"log"
 	"math"
 	"net/http"

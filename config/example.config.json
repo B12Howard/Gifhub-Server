@@ -1,11 +1,4 @@
 {
-    "DB": {
-        "HOST": "",
-        "PORT": 5436,
-        "USER": "",
-        "PASSWORD": "",
-        "DBNAME": ""
-  },
   "GCPCLOUDSTORAGE":{},
   "FIREBASE":{}
 }

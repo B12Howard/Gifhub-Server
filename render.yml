@@ -1,0 +1,17 @@
+databases:
+  - name: kithli-db
+    plan: free
+    databaseName: kithli
+    user: kithli_user
+
+services:
+  - name: kithli
+    type: web
+    runtime: go
+    buildCommand: go build -o kithli .
+    startCommand: ./kithli
+    envVars:
+      - key: postgresql://howard:lVXYIeD8cfixuOBiVus8NTl5VLJAfqQe@dpg-cuupb6fnoe9s73am1tf0-a/kithli
+        fromDatabase:
+          name: kithli-db
+          property: connectionString
