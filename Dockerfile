@@ -13,9 +13,9 @@ RUN go build
 FROM alpine
 RUN adduser -S -D -H -h /app appuser
 USER appuser
-COPY --from=builder /build/kithli-api /app/
+COPY --from=builder /build/gifconverter /app/
 WORKDIR /app
-CMD ["./kithli-api"]
+CMD ["./gifconverter"]
 
 # FROM golang:1.16-alpine AS builder
 # RUN mkdir /build
@@ -29,8 +29,8 @@ CMD ["./kithli-api"]
 # # RUN apk add --no-cache ca-certificates && update-ca-certificates
 # # RUN adduser -S -D -H -h /app appuser
 # # USER appuser
-# # COPY --from=builder /build/kithli-api /usr/bin/kithli-api
+# # COPY --from=builder /build/gifconverter /usr/bin/gifconverter
 # # EXPOSE 5000 5020
 # # WORKDIR /app
-# # # CMD ["./kithli-api"]
-# # ENTRYPOINT [ "/usr/bin/kithli-api" ]
+# # # CMD ["./gifconverter"]
+# # ENTRYPOINT [ "/usr/bin/gifconverter" ]

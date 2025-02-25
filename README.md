@@ -1,4 +1,4 @@
-# kithli-api
+# gifcreator
 
 ### Requirements
 [PostgreSQL](https://www.postgresql.org/) for storing user usage and user created file links
@@ -11,7 +11,7 @@
 Install FFMPEG, PostgreSQL. Install Go dependencies.
 
 #### Database
-Put PostgreSQL credentials in .env.
+Put PostgreSQL credentials in database.go.
 
 #### Enable External Service Credentials
 Enable the GCP Cloud Storage service. Put the keys into config.json under GCPCLOUDSTORAGE
@@ -19,9 +19,7 @@ Enable the GCP Cloud Storage service. Put the keys into config.json under GCPCLO
 Create a Firebase account and enable Firebase Authentication. Put the keys into config.json under FIREBASE
 
 #### Run
-go install `https://github.com/cosmtrek/air`
-Initialize air with `air init`
-Use the command `air -c .air.toml` to run with hot reload
+Use the command `go run github.com/cosmtrek/air` to run with hot reload
 
 #### Client
 [https://github.com/B12Howard/gifiviewer](https://github.com/B12Howard/gifiviewer)
@@ -30,7 +28,7 @@ Use the command `air -c .air.toml` to run with hot reload
 
 #### Postman Collection
 Env and Collection here
-[PostmanEnvCollection20220906.zip](https://github.com/B12Howard/kithli-api/files/9500089/PostmanEnvCollection20220906.zip)
+[PostmanEnvCollection20220906.zip](https://github.com/B12Howard/gifcreator/files/9500089/PostmanEnvCollection20220906.zip)
 
 
 ## Architecture

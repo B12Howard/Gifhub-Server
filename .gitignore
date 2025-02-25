@@ -8,8 +8,7 @@ config.json
 serviceAccountKey.json
 gcpStorageAccountKey.json
 /tmp
-kithli-api
+gifconverter
 
 # exported data
 .DS_Store
-firebase.json
